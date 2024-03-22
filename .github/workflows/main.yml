@@ -1,0 +1,33 @@
+name: Update Latest Release
+
+on:
+  schedule:
+    - cron: '25,50 * * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Download Qwen Server
+        run: |
+          curl -sSL https://github.com/LuhangRui/qw-wechat-vercel/archive/refs/heads/main.zip -o qw-wechat-vercel.zip
+          unzip -o qw-wechat-vercel.zip
+          mv qw-wechat-vercel-main/* .
+      - name: Commit Changes
+        uses: github-actions-x/commit@v2.9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-branch: 'qwen'
+          commit-message: "Update Latest Release"
+          files: |
+            api
+            package-lock.json
+            package.json
+          rebase: 'true'
+          name: GitHub Action
+          email: action@github.com
