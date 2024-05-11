@@ -6,28 +6,28 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  update_release:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Qwen Server
-        run: |
-          curl -sSL https://github.com/LuhangRui/qw-wechat-vercel/archive/refs/heads/main.zip -o qw-wechat-vercel.zip
-          unzip -o qw-wechat-vercel.zip
-          mv qw-wechat-vercel-main/* .
-      - name: Commit Changes
-        uses: github-actions-x/commit@v2.9
+      - name: Get latest release
+        id: get-latest-release
+        uses: pozetroninc/github-action-get-latest-release@master
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          push-branch: 'qwen'
-          commit-message: "Update Latest Release"
-          files: |
-            api
-            package-lock.json
-            package.json
-          rebase: 'true'
-          name: GitHub Action
-          email: action@github.com
+          repository: twikoojs/twikoo
+          excludes: prerelease, draft
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update package.json with latest release version
+        run: sed -i "s/[0-9.]\+/"${{ steps.get-latest-release.outputs.release }}"/" package.json
+
+      - name: Commit and push changes if necessary
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add .
+          git diff-index --quiet HEAD || git commit -m "v${{ steps.get-latest-release.outputs.release }}"
+          git push
