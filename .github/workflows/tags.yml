@@ -1,0 +1,62 @@
+name: Update Release Tag for Single Repo
+
+on:
+  schedule:
+    - cron: '30 * * * *'
+  workflow_dispatch:
+
+env:
+  TARGET_REPO2: yjsexam/ChatGPT-Next-Web
+  SOURCE_REPO2: ChatGPTNextWeb/ChatGPT-Next-Web
+
+jobs:
+  update-tag-chatgpt-next-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Target Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.TARGET_REPO2 }}
+          token: ${{ secrets.PAT }}
+          path: target-repo
+
+      - name: Fetch Latest Release from Source Repository
+        id: get-latest-release
+        uses: pozetroninc/github-action-get-latest-release@master
+        with:
+          repository: ${{ env.SOURCE_REPO2 }}
+          excludes: prerelease, draft
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+        working-directory: target-repo
+
+      - name: Extract Release Notes
+        id: extract-release-notes
+        run: |
+          RELEASE_NOTES=$(curl -s "https://api.github.com/repos/${{ env.SOURCE_REPO2 }}/releases/latest" | jq -r '.body')
+          LAST_LINE=$(echo "$RELEASE_NOTES" | tail -n 1)
+          URL=$(echo "$LAST_LINE" | awk '{print $NF}')
+          VERSION=$(basename "$URL")
+          FORMATTED_LINE="**Full Changelog**: [**$VERSION**]($URL)"
+          echo "LAST_LINE=$FORMATTED_LINE" >> $GITHUB_ENV
+      - name: Create or Update Tag
+        run: |
+          TAG_NAME=${{ steps.get-latest-release.outputs.release }}
+          git tag -f $TAG_NAME
+          git push origin -f $TAG_NAME
+        working-directory: target-repo
+
+      - name: Create or Update GitHub Release
+        run: |
+          TAG_NAME=${{ steps.get-latest-release.outputs.release }}
+          RELEASE_NOTES="${{ env.LAST_LINE }}"
+          gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "$RELEASE_NOTES" --target main || \
+          gh release edit "$TAG_NAME" --title "$TAG_NAME" --notes "$RELEASE_NOTES" --target main
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+        working-directory: target-repo
