@@ -1,9 +1,9 @@
 name: Update Release Tags for Multiple Repos
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '30 * * * *'
-  workflow_dispatch:
 
 env:
   TARGET_REPO1: yjsexam/lobe-chat
@@ -39,7 +39,7 @@ jobs:
 
       - name: Create or Update Tag - Lobe Chat
         run: |
-          TAG_NAME=${{ steps.get-latest-release-lobe-chat.outputs.release }}
+          TAG_NAME="release-${{ steps.get-latest-release-lobe-chat.outputs.release }}"
           git tag -f $TAG_NAME
           git push origin -f $TAG_NAME
         working-directory: target-repo-lobe-chat
@@ -47,17 +47,16 @@ jobs:
       - name: Fetch Release Notes from GitHub API - Lobe Chat
         id: get-release-notes-lobe-chat
         run: |
-          TAG_NAME=${{ steps.get-latest-release-lobe-chat.outputs.release }}
+          TAG_NAME="${{ steps.get-latest-release-lobe-chat.outputs.release }}"
           RELEASE_NOTES=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOURCE_REPO1 }}/releases/tags/$TAG_NAME | jq -r '.body // "No release notes available"')
           echo "RELEASE_NOTES_LobeChat<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_NOTES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
       - name: Create or Update GitHub Release - Lobe Chat
         run: |
-          TAG_NAME=${{ steps.get-latest-release-lobe-chat.outputs.release }}
-          gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "${{ env.RELEASE_NOTES_LobeChat }}" --target main || \
-          gh release edit "$TAG_NAME" --title "$TAG_NAME" --notes "${{ env.RELEASE_NOTES_LobeChat }}" --target main
+          TAG_NAME="release-${{ steps.get-latest-release-lobe-chat.outputs.release }}"
+          gh release create "$TAG_NAME" --title "${{ steps.get-latest-release-lobe-chat.outputs.release }}" --notes "${{ env.RELEASE_NOTES_LobeChat }}" --target main || \
+          gh release edit "$TAG_NAME" --title "${{ steps.get-latest-release-lobe-chat.outputs.release }}" --notes "${{ env.RELEASE_NOTES_LobeChat }}" --target main
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
         working-directory: target-repo-lobe-chat
@@ -90,7 +89,7 @@ jobs:
       - name: Extract Release Notes - ChatGPT Next Web
         id: extract-release-notes-chatgpt-next-web
         run: |
-          RELEASE_NOTES=$(curl -s "https://api.github.com/repos/${{ env.SOURCE_REPO2 }}/releases/latest" | jq -r '.body')
+          RELEASE_NOTES=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ env.SOURCE_REPO2 }}/releases/latest | jq -r '.body // "No release notes available"')
           LAST_LINE=$(echo "$RELEASE_NOTES" | tail -n 1)
           URL=$(echo "$LAST_LINE" | awk '{print $NF}')
           VERSION=$(basename "$URL")
@@ -99,17 +98,17 @@ jobs:
 
       - name: Create or Update Tag - ChatGPT Next Web
         run: |
-          TAG_NAME=${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}
+          TAG_NAME="release-${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}"
           git tag -f $TAG_NAME
           git push origin -f $TAG_NAME
         working-directory: target-repo-chatgpt-next-web
 
       - name: Create or Update GitHub Release - ChatGPT Next Web
         run: |
-          TAG_NAME=${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}
+          TAG_NAME="release-${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}"
           RELEASE_NOTES="${{ env.LAST_LINE }}"
-          gh release create "$TAG_NAME" --title "$TAG_NAME" --notes "$RELEASE_NOTES" --target main || \
-          gh release edit "$TAG_NAME" --title "$TAG_NAME" --notes "$RELEASE_NOTES" --target main
+          gh release create "$TAG_NAME" --title "${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}" --notes "$RELEASE_NOTES" --target main || \
+          gh release edit "$TAG_NAME" --title "${{ steps.get-latest-release-chatgpt-next-web.outputs.release }}" --notes "$RELEASE_NOTES" --target main
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
         working-directory: target-repo-chatgpt-next-web
