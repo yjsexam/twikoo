@@ -25,7 +25,7 @@ on:
           - disabled_inactivity
           - disabled_manually
       delete_run_by_conclusion_pattern:
-        description: '根据结论删除运行:action_required、cancelled、failure、skipped、success'
+        description: '根据结论删除运行:action_required, cancelled, failure, skipped, success'
         required: true
         default: "ALL"
         type: choice
