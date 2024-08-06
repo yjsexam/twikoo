@@ -2,7 +2,7 @@ name: Update Latest Release
 
 on:
   schedule:
-    - cron: '25,50 * * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
