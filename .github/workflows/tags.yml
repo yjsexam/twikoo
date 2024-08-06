@@ -3,7 +3,7 @@ name: Update Release Tags for Multiple Repos
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 * * * *'
+    - cron: '30 */6 * * *'
 
 env:
   TARGET_REPO1: yjsexam/lobe-chat
