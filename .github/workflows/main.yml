@@ -1,4 +1,4 @@
-name: Update Latest Release
+name: Update and Sync Repositories
 
 on:
   schedule:
@@ -41,3 +41,38 @@ jobs:
           git add package.json
           git diff-index --quiet HEAD || git commit -m "v${{ steps.get-latest-release.outputs.release }}"
           git push
+
+  update_master:
+    runs-on: ubuntu-latest
+    needs: update_release
+
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Download and unzip main branch
+        run: |
+          curl -L https://codeload.github.com/walinejs/waline/zip/refs/heads/main -o waline-main.zip
+          unzip waline-main.zip -d waline-main
+          rm waline-main.zip
+
+      - name: Remove .github folder
+        run: rm -rf waline-main/waline-main/.github
+
+      - name: Prepare and commit files
+        run: |
+          rsync -av waline-main/waline-main/ ./
+          rm -rf waline-main
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Merge branch 'main' of https://github.com/walinejs/waline"
+          git push
+
+      - name: Push changes to master branch
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: master
